@@ -38,7 +38,11 @@ def user_session(conn, addr, token, ha):
 def start_server(port: int = 26713, token: str = ""):
     if token:
         ha = hashlib.sha256(token.encode("utf-8")).hexdigest()
-    with socket.create_server(('', port)) as server:
+    kwargs = {
+        "family": socket.AF_INET6,
+        "dualstack_ipv6": True
+    } if socket.has_dualstack_ipv6() else {}
+    with socket.create_server(('', port), **kwargs) as server:
         print(
             f"[{datetime.now().isoformat()}]",
             f"Server started on '127.0.0.1:{port}'."
@@ -49,8 +53,16 @@ def start_server(port: int = 26713, token: str = ""):
                 f"[{datetime.now().isoformat()}]",
                 f"Accepted connection from '{addr[0]}:{addr[1]}'."
             )
-            proc = Process(target=user_session, args=(conn, addr, token, ha))
-            proc.start()
+            try:
+                proc = Process(
+                    target=user_session, args=(conn, addr, token, ha)
+                )
+                proc.start()
+            except ConnectionResetError:
+                print(
+                    f"[{datetime.now().isoformat()}]",
+                    f"Connection reset at '{addr[0]}:{addr[1]}'."
+                )
 
 
 def main():

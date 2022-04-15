@@ -2,6 +2,11 @@ import socket
 import hashlib
 
 
+def chat(socket):
+    while True:
+        pass
+
+
 def login(host, port, username, token):
     host = socket.gethostbyname(host)
     ha = hashlib.sha256(token.encode("utf-8")).hexdigest()
@@ -13,6 +18,9 @@ def login(host, port, username, token):
             rc = so.recv(12)
             if rc == b"CRAB_SUCCESS":
                 print("Login success!")
+                chat(so)
+            else:
+                print("Login failure!")
         else:
             print("Login failure!")
 
