@@ -8,31 +8,39 @@ registered = []
 
 
 def user_session(conn, addr, token, ha):
-    ve = conn.recv(88).decode("utf-8")
-    if ve.find("CRAB_CHAT_TOKEN_") == 0 and \
-            ve.rfind("_B_A_R_C") == 80:
-        hashed = ve[16:-8]
-        if ha == hashed or not token:
-            print(
-                f"[{datetime.now().isoformat()}]",
-                f"'{addr[0]}:{addr[1]}':",
-                "Verify success!"
-            )
-            conn.sendall(b"CRABPASSUSERNAME")
-            name = conn.recv(256).decode("utf-8")
-            if name not in registered:
-                registered.append(name)
-            conn.sendall(b"CRAB_SUCCESS")
-            print(
-                f"[{datetime.now().isoformat()}]",
-                f"'{addr[0]}:{addr[1]}': Login as '{name}'"
-            )
-        else:
-            conn.sendall(b"CRABLOGINFAILURE")
-            print(
-                f"[{datetime.now().isoformat()}]",
-                f"'{addr[0]}:{addr[1]}': Verify failure!"
-            )
+    try:
+        ve = conn.recv(88).decode("utf-8")
+        if ve.find("CRAB_CHAT_TOKEN_") == 0 and \
+                ve.rfind("_B_A_R_C") == 80:
+            hashed = ve[16:-8]
+            if ha == hashed or not token:
+                print(
+                    f"[{datetime.now().isoformat()}]",
+                    f"'{addr[0]}:{addr[1]}':",
+                    "Verify success!"
+                )
+                conn.sendall(b"CRABPASSUSERNAME")
+                name = conn.recv(256).decode("utf-8")
+                if name not in registered:
+                    registered.append(name)
+                conn.sendall(b"CRAB_SUCCESS")
+                print(
+                    f"[{datetime.now().isoformat()}]",
+                    f"'{addr[0]}:{addr[1]}': Login as '{name}'"
+                )
+            else:
+                conn.sendall(b"CRABLOGINFAILURE")
+                print(
+                    f"[{datetime.now().isoformat()}]",
+                    f"'{addr[0]}:{addr[1]}': Verify failure!"
+                )
+    except ConnectionResetError:
+        print(
+            f"[{datetime.now().isoformat()}]",
+            f"Connection reset at '{addr[0]}:{addr[1]}'."
+        )
+    finally:
+        conn.close()
 
 
 def start_server(port: int = 26713, token: str = ""):
@@ -53,16 +61,8 @@ def start_server(port: int = 26713, token: str = ""):
                 f"[{datetime.now().isoformat()}]",
                 f"Accepted connection from '{addr[0]}:{addr[1]}'."
             )
-            try:
-                proc = Process(
-                    target=user_session, args=(conn, addr, token, ha)
-                )
-                proc.start()
-            except ConnectionResetError:
-                print(
-                    f"[{datetime.now().isoformat()}]",
-                    f"Connection reset at '{addr[0]}:{addr[1]}'."
-                )
+            proc = Process(target=user_session, args=(conn, addr, token, ha))
+            proc.start()
 
 
 def main():
